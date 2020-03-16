@@ -12,6 +12,7 @@ typedef struct		s_philo
 	pthread_mutex_t	*left;
 	int				name;
 	int				last_eat;
+	int				nb_of_eat;
 }					t_philo;
 
 typedef struct		s_data
@@ -19,12 +20,12 @@ typedef struct		s_data
 	t_philo			*philo;
 	pthread_mutex_t	*fork;
 	pthread_mutex_t	msg;
-
 	int				nb;
 	int				time_to_die;
 	int				time_to_eat;
 	int				time_to_sleep;
 	int				number_of_time_each_philosophers_must_eat;
+	int				philo_ok;
 	int				time_start;
 	int				philo_dead;
 }					t_data;

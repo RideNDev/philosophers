@@ -11,7 +11,6 @@ int				main(int ac, char **av)
 	g_data = &data;
 	init_game(ac, av);
 	start_game();
-//	usleep(705032704);
 	while (1)
 	{
 		if (end_game())
@@ -38,6 +37,7 @@ int				init_game(int ac, char **av)
 		return (0);
 	pthread_mutex_init(&g_data->msg, NULL);
 	g_data->philo_dead = 0;
+	g_data->philo_ok = 0;
 	init_philosophers();
 	return (1);
 }
@@ -54,6 +54,7 @@ void			init_philosophers()
 		g_data->philo[i].right = &(g_data->fork[(i + 1) % g_data->nb]);
 		g_data->philo[i].last_eat = 0;
 		g_data->philo[i].name = i + 1;
+		g_data->philo[i].nb_of_eat = 0;
 		i++;
 	}
 }
@@ -70,8 +71,7 @@ int				start_game()
 	while (i < g_data->nb)
 	{
 		pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]);
-//		pthread_detach(tid);
-		usleep(50);
+		usleep(20);
 		i++;
 	}
 	return (0);
@@ -79,9 +79,22 @@ int				start_game()
 
 int				end_game()
 {
+	int		time;
+
 	if (g_data->philo_dead)
 	{
-		write(1, "END\n", 4);
+		pthread_mutex_lock(&g_data->msg);
+		time = get_time() - g_data->time_start;
+		ft_putnbr_fd(time, 1);
+		write(1, "\t", 1);
+		ft_putnbr_fd(g_data->philo_dead, 1);
+		write(1, " died\n", 6);
+		return (1);
+	}
+	if (g_data->philo_ok >= g_data->nb)
+	{
+		pthread_mutex_lock(&g_data->msg);
+		write(1, "Everybody has eaten enough times.\n", 34);
 		return (1);
 	}
 	return (0);
@@ -127,12 +140,17 @@ void			*ft_philo(void *tmp_philo)
 	pthread_create(&tid, NULL, &check_life, philo);
 	while (1)
 	{
+		//------ THINK -----------------
+		message(philo, 1);
 		//------- EAT ------------------
 		pthread_mutex_lock(philo->left);
 		pthread_mutex_lock(philo->right);
 		message(philo, 4);
 		message(philo, 4);
-		philo->last_eat = get_time();// - g_data->time_start;
+		philo->last_eat = get_time();
+		(philo->nb_of_eat)++;
+		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
+			g_data->philo_ok++;
 		message(philo, 2);
 		usleep(g_data->time_to_eat * 1000);
 		pthread_mutex_unlock(philo->left);
@@ -140,8 +158,6 @@ void			*ft_philo(void *tmp_philo)
 		//------ SLEEP -----------------
 		message(philo, 3);
 		usleep(g_data->time_to_sleep * 1000);	
-		//------ THINK -----------------
-		message(philo, 1);
 	}
 	return (NULL);
 }
@@ -154,12 +170,10 @@ void			*check_life(void *tmp_philo)
 	while (1)
 	{
 		if (get_time() - philo->last_eat >= g_data->time_to_die)
-			g_data->philo_dead = 1;
+			g_data->philo_dead = philo->name;
 	}
 	return (NULL);
 }
 
 //-------------------------------------------------------------------------------
-
-
 
