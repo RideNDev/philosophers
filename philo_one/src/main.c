@@ -1,8 +1,8 @@
 #include "../inc/philosophers.h"
 
-t_data		*g_data;
+t_data			*g_data;
 
-int			main(int ac, char **av)
+int				main(int ac, char **av)
 {
 	t_data	data;
 
@@ -11,12 +11,18 @@ int			main(int ac, char **av)
 	g_data = &data;
 	init_game(ac, av);
 	start_game();
+//	usleep(705032704);
+	while (1)
+	{
+		if (end_game())
+			return (0);
+	}
 	return (0);
 }
 
 //---------------------------- INIT_GAME -----------------------------------
 
-int			init_game(int ac, char **av)
+int				init_game(int ac, char **av)
 {
 	g_data->nb = ft_atoi(av[1]);
 	g_data->time_to_die = ft_atoi(av[2]);
@@ -30,17 +36,20 @@ int			init_game(int ac, char **av)
 		return (0);
 	if (!(g_data->fork = malloc(sizeof(pthread_mutex_t) * g_data->nb)))
 		return (0);
+	pthread_mutex_init(&g_data->msg, NULL);
+	g_data->philo_dead = 0;
 	init_philosophers();
 	return (1);
 }
 
-void		init_philosophers()
+void			init_philosophers()
 {
 	int		i;
 
 	i = 0;
 	while (i < g_data->nb)
 	{
+		pthread_mutex_init(&g_data->fork[i], NULL);
 		g_data->philo[i].left = &(g_data->fork[i]);
 		g_data->philo[i].right = &(g_data->fork[(i + 1) % g_data->nb]);
 		g_data->philo[i].last_eat = 0;
@@ -51,56 +60,71 @@ void		init_philosophers()
 
 //----------------------------- START_GAME -----------------------------------
 
-int			start_game()
+int				start_game()
 {
 	int			i;
 	pthread_t	tid;
 
 	i = 0;
+	g_data->time_start = get_time();
 	while (i < g_data->nb)
 	{
-		pthread_create(&tid, NULL, &ft_life, &g_data->philo[i]);
-		pthread_detach(tid);
+		pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]);
+//		pthread_detach(tid);
 		usleep(50);
 		i++;
 	}
 	return (0);
 }
 
-int			get_time(void)
+int				end_game()
+{
+	if (g_data->philo_dead)
+	{
+		write(1, "END\n", 4);
+		return (1);
+	}
+	return (0);
+}
+
+int				get_time(void)
 {
 	struct timeval	tmp;
 
 	gettimeofday(&tmp, NULL);
-	return (((int)(tmp.tv_sec) * 1000) + ((int)(tmp.tv_usec) / 1000));
+	return ((tmp.tv_sec * (uint64_t)1000) + (tmp.tv_usec / 1000));
 }
 
-void		message(t_philo *philo, int msg)
+void			message(t_philo *philo, int msg)
 {
 	int		time;
 
+	pthread_mutex_lock(&g_data->msg);
 	time = get_time() - g_data->time_start;
 	ft_putnbr_fd(time, 1);
 	write(1, "\t", 1);
 	ft_putnbr_fd(philo->name, 1);
 	if (msg == 1)
 		write(1, " is thinking\n", 13);
-	if (msg == 2)
+	else if (msg == 2)
 		write(1, " is eating\n", 11);
-	if (msg == 3)
+	else if (msg == 3)
 		write(1, " is sleeping\n", 13);
-	if (msg == 4)
+	else if (msg == 4)
 		write(1, " has taken a fork\n", 18);
+	pthread_mutex_unlock(&g_data->msg);
 }
 
 
 //------------------------------ PHILO_LIFE ------------------------------------
 
-void		*ft_life(void *tmp_philo)
+void			*ft_philo(void *tmp_philo)
 {
-	t_philo	*philo;
+	t_philo		*philo;
+	pthread_t	tid;
 
 	philo = (t_philo *)tmp_philo;
+	pthread_create(&tid, NULL, &check_life, philo);
 	while (1)
 	{
 		//------- EAT ------------------
@@ -108,7 +132,7 @@ void		*ft_life(void *tmp_philo)
 		pthread_mutex_lock(philo->right);
 		message(philo, 4);
 		message(philo, 4);
-		philo->last_eat = get_time() - g_data->time_start;
+		philo->last_eat = get_time();// - g_data->time_start;
 		message(philo, 2);
 		usleep(g_data->time_to_eat * 1000);
 		pthread_mutex_unlock(philo->left);
@@ -118,6 +142,19 @@ void		*ft_life(void *tmp_philo)
 		usleep(g_data->time_to_sleep * 1000);	
 		//------ THINK -----------------
 		message(philo, 1);
+	}
+	return (NULL);
+}
+
+void			*check_life(void *tmp_philo)
+{
+	t_philo *philo;
+
+	philo = (t_philo *)tmp_philo;
+	while (1)
+	{
+		if (get_time() - philo->last_eat >= g_data->time_to_die)
+			g_data->philo_dead = 1;
 	}
 	return (NULL);
 }
