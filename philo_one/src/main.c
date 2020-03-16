@@ -61,6 +61,7 @@ int			start_game()
 	{
 		pthread_create(&tid, NULL, &ft_life, &g_data->philo[i]);
 		pthread_detach(tid);
+		usleep(50);
 		i++;
 	}
 	return (0);
@@ -71,14 +72,14 @@ int			get_time(void)
 	struct timeval	tmp;
 
 	gettimeofday(&tmp, NULL);
-	return ((tmp.tv_sec * 1000) + (tmp.tv_usec / 1000));
+	return (((int)(tmp.tv_sec) * 1000) + ((int)(tmp.tv_usec) / 1000));
 }
 
 void		message(t_philo *philo, int msg)
 {
 	int		time;
 
-	time = get_time()- g_data->time_start;
+	time = get_time() - g_data->time_start;
 	ft_putnbr_fd(time, 1);
 	write(1, "\t", 1);
 	ft_putnbr_fd(philo->name, 1);
