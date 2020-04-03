@@ -13,6 +13,7 @@ int				main(int ac, char **av)
 	start_game();
 	while (1)
 	{
+//		usleep(20);
 		if (end_game())
 			return (0);
 	}
@@ -71,7 +72,8 @@ int				start_game()
 	while (i < g_data->nb)
 	{
 		pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]);
-		usleep(20);
+		g_data->philo[i].last_eat = g_data->time_start;
+//---> init dans philo2 et 3
 		i++;
 	}
 	return (0);
