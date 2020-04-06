@@ -93,12 +93,12 @@ int				end_game()
 		write(1, " died\n", 6);
 		return (1);
 	}
-//	if (g_data->philo_ok >= g_data->nb)
-//	{
-//		pthread_mutex_lock(&g_data->msg);
-//		write(1, "Everybody has eaten enough times.\n", 34);
-//		return (1);
-//	}
+	if (g_data->philo_ok >= g_data->nb)
+	{
+		pthread_mutex_lock(&g_data->msg);
+		write(1, "Everybody has eaten enough times.\n", 34);
+		return (1);
+	}
 	return (0);
 }
 
@@ -145,11 +145,6 @@ void			*ft_philo(void *tmp_philo)
 		//------ THINK -----------------
 		message(philo, 1);
 		//------- EAT ------------------
-//		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
-//		{	
-//			g_data->philo_ok++;
-//			break;
-//		}
 		pthread_mutex_lock(philo->left);
 		pthread_mutex_lock(philo->right);
 		message(philo, 4);
@@ -160,6 +155,11 @@ void			*ft_philo(void *tmp_philo)
 		usleep(g_data->time_to_eat * 1000);
 		pthread_mutex_unlock(philo->left);
 		pthread_mutex_unlock(philo->right);
+		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
+		{	
+			g_data->philo_ok++;
+			break;
+		}
 		//------ SLEEP -----------------
 		message(philo, 3);
 		usleep(g_data->time_to_sleep * 1000);	
