@@ -8,21 +8,16 @@ int				main(int ac, char **av)
 
 	if (ac > 6 || ac < 5)
 		return (0);
-//	sem_unlink(FORK);
-//	sem_unlink(MSG);
 	g_data = &data;
 	if (!(init_game(ac, av)))
 		return (0);
+	sem_wait(g_data->end);
 	if (!(start_game()))
 		return (0);
-	while (1)
-	{
-		if (end_game())
-		{
-			clean();
-			return (0);
-		}
-	}
+	sem_wait(g_data->end);
+	sem_post(g_data->msg);
+	end_game();
+	clean();	
 	return (0);
 }
 
@@ -40,8 +35,9 @@ int				init_game(int ac, char **av)
 		g_data->number_of_time_each_philosophers_must_eat = 2147483647;
 	if (!(g_data->philo = malloc(sizeof(t_philo) * g_data->nb)))
 		return (0);
-	g_data->fork = sem_open(FORK, O_CREAT | O_EXCL, 0644, g_data->nb);
-	g_data->msg = sem_open(MSG, O_CREAT | O_EXCL, 0644, 1);
+	g_data->fork = ft_sem(FORK, g_data->nb);
+	g_data->msg = ft_sem(MSG, 1);
+	g_data->end = ft_sem(END, 1);
 	g_data->philo_dead = 0;
 	g_data->philo_ok = 0;
 	init_philosophers();
@@ -66,6 +62,7 @@ void clean()
 {
 	sem_unlink(FORK);
 	sem_unlink(MSG);
+	sem_unlink(END);
 	free(g_data->philo);
 }
 
@@ -103,7 +100,7 @@ int				end_game()
 		sem_post(g_data->msg);
 		return (1);
 	}
-	if (g_data->philo_ok >= g_data->nb)
+	else if (g_data->philo_ok >= g_data->nb)
 	{
 		sem_wait(g_data->msg);
 		write(1, "Everybody has eaten enough times.\n", 34);
@@ -119,6 +116,12 @@ int				get_time(void)
 
 	gettimeofday(&tmp, NULL);
 	return ((tmp.tv_sec * (uint64_t)1000) + (tmp.tv_usec / 1000));
+}
+
+sem_t               *ft_sem(const char *str, int nb)
+{	
+ 	sem_unlink(str);
+    return (sem_open(str, O_CREAT | O_EXCL, 0644, nb));
 }
 
 void			message(t_philo *philo, int msg)
@@ -170,6 +173,8 @@ void			*ft_philo(void *tmp_philo)
 		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
 		{	
 			g_data->philo_ok++;
+			if (g_data->philo_ok >= g_data->nb)
+				sem_post(g_data->end);
 			break;
 		}
 		//------ SLEEP -----------------
@@ -189,6 +194,7 @@ void			*check_life(void *tmp_philo)
 		if (get_time() - philo->last_eat >= g_data->time_to_die)
 		{	
 			g_data->philo_dead = philo->name;
+			sem_post(g_data->end);
 			break;
 		}
 	}
