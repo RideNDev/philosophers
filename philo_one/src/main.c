@@ -9,13 +9,17 @@ int				main(int ac, char **av)
 	if (ac > 6 || ac < 5)
 		return (0);
 	g_data = &data;
-	init_game(ac, av);
-	start_game();
+	if (!(init_game(ac, av)))
+		return (0);
+	if (!(start_game()))
+		return (0);
 	while (1)
 	{
-//		usleep(20);
 		if (end_game())
+		{
+			clean();
 			return (0);
+		}
 	}
 	return (0);
 }
@@ -60,6 +64,22 @@ void			init_philosophers()
 	}
 }
 
+void	clean()
+{
+	int i;
+
+	i = 0;
+	while (i < g_data->nb)
+	{
+		pthread_mutex_destroy(&g_data->fork[i]);
+//		pthread_mutex_destroy(&g_data->philo[i].is_eating);
+		i++;
+	}
+	pthread_mutex_destroy(&g_data->msg);
+	free(g_data->fork);
+	free(g_data->philo);
+}
+
 //----------------------------- START_GAME -----------------------------------
 
 int				start_game()
@@ -71,12 +91,13 @@ int				start_game()
 	g_data->time_start = get_time();
 	while (i < g_data->nb)
 	{
-		pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]);
+		if (pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]))
+			return (0);
 		g_data->philo[i].last_eat = g_data->time_start;
 //---> init dans philo2 et 3
 		i++;
 	}
-	return (0);
+	return (1);
 }
 
 int				end_game()
@@ -139,7 +160,8 @@ void			*ft_philo(void *tmp_philo)
 	pthread_t	tid;
 
 	philo = (t_philo *)tmp_philo;
-	pthread_create(&tid, NULL, &check_life, philo);
+	if (pthread_create(&tid, NULL, &check_life, philo))
+		return (void*)1;
 	while (1)
 	{
 		//------ THINK -----------------

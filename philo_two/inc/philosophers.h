@@ -40,6 +40,7 @@ extern		t_data *g_data;
 
 int					init_game(int ac, char **av);
 void        		init_philosophers(void);
+void				clean();
 
 int					start_game(void);
 int         		end_game();

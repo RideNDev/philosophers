@@ -8,17 +8,18 @@ int				main(int ac, char **av)
 
 	if (ac > 6 || ac < 5)
 		return (0);
-	sem_unlink(FORK);
-	sem_unlink(MSG);
+//	sem_unlink(FORK);
+//	sem_unlink(MSG);
 	g_data = &data;
-	init_game(ac, av);
-	start_game();
+	if (!(init_game(ac, av)))
+		return (0);
+	if (!(start_game()))
+		return (0);
 	while (1)
 	{
 		if (end_game())
 		{
-			sem_unlink(FORK);
-			sem_unlink(MSG);
+			clean();
 			return (0);
 		}
 	}
@@ -61,6 +62,13 @@ void			init_philosophers()
 	}
 }
 
+void clean()
+{
+	sem_unlink(FORK);
+	sem_unlink(MSG);
+	free(g_data->philo);
+}
+
 //----------------------------- START_GAME -----------------------------------
 
 int				start_game()
@@ -72,11 +80,12 @@ int				start_game()
 	g_data->time_start = get_time();
 	while (i < g_data->nb)
 	{
-		pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]);
-		usleep(50);
+		if (pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]))
+			return (0);
+		g_data->philo[i].last_eat = g_data->time_start;
 		i++;
 	}
-	return (0);
+	return (1);
 }
 
 int				end_game()
@@ -94,13 +103,13 @@ int				end_game()
 		sem_post(g_data->msg);
 		return (1);
 	}
-//	if (g_data->philo_ok >= g_data->nb)
-//	{
-//		sem_wait(g_data->msg);
-//		write(1, "Everybody has eaten enough times.\n", 34);
-//		sem_post(g_data->msg);
-//		return (1);
-//	}
+	if (g_data->philo_ok >= g_data->nb)
+	{
+		sem_wait(g_data->msg);
+		write(1, "Everybody has eaten enough times.\n", 34);
+		sem_post(g_data->msg);
+		return (1);
+	}
 	return (0);
 }
 
@@ -141,27 +150,28 @@ void			*ft_philo(void *tmp_philo)
 	pthread_t	tid;
 
 	philo = (t_philo *)tmp_philo;
-	pthread_create(&tid, NULL, &check_life, philo);
+	if (pthread_create(&tid, NULL, &check_life, philo))
+		return (NULL);
 	while (1)
 	{
 		//------ THINK -----------------
 		message(philo, 1);
 		//------- EAT ------------------
-//		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
-//		{	
-//			g_data->philo_ok++;
-//			break;
-//		}
 		sem_wait(g_data->fork);
 		sem_wait(g_data->fork);
 		message(philo, 4);
 		message(philo, 4);
 		philo->last_eat = get_time();
-//		(philo->nb_of_eat)++;
+		(philo->nb_of_eat)++;
 		message(philo, 2);
 		usleep(g_data->time_to_eat * 1000);
 		sem_post(g_data->fork);
 		sem_post(g_data->fork);
+		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
+		{	
+			g_data->philo_ok++;
+			break;
+		}
 		//------ SLEEP -----------------
 		message(philo, 3);
 		usleep(g_data->time_to_sleep * 1000);	
