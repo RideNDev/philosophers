@@ -7,16 +7,20 @@
 # include <sys/time.h>
 # include <fcntl.h>  
 # include <semaphore.h>
+# include <stdint.h>
+#include <signal.h>
 
 # define MSG "msg_w"
 # define FORK "fork_w"
+# define END "end_w"
 
 typedef struct		s_philo
 {
+	sem_t           *eat;
+	int				pid;
 	int				name;
 	int				last_eat;
 	int				nb_of_eat;
-	int				pid;
 }					t_philo;
 
 typedef struct		s_data
@@ -24,6 +28,8 @@ typedef struct		s_data
 	t_philo			*philo;
 	sem_t			*fork;
 	sem_t			*msg;
+	sem_t			*end;
+	int				last_msg;
 	int				nb;
 	int				time_to_die;
 	int				time_to_eat;
@@ -41,17 +47,20 @@ extern		t_data *g_data;
 
 int					init_game(int ac, char **av);
 void        		init_philosophers(void);
+void				clean();
 
 int					start_game(void);
 int         		end_game();
 
-void				ft_philo(t_philo *philo);
+void				*ft_philo(void *tmp_philo);
 void				*check_life(void *tmp_philo);
 void				message(t_philo *philo, int msg);
 int					get_time(void);
+sem_t				*ft_sem(const char *str, int nb);
 
 int					ft_atoi(const char *str);
 void				ft_putnbr_fd(int nb, int fd);
+char				*ft_itoa(int n);
 
 //---------------------------------------------------------------------
 

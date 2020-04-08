@@ -7,6 +7,7 @@
 # include <sys/time.h>
 # include <fcntl.h>  
 # include <semaphore.h>
+# include <stdint.h>
 
 # define MSG "msg_w"
 # define FORK "fork_w"
@@ -14,6 +15,7 @@
 
 typedef struct		s_philo
 {
+	sem_t           *eat;
 	int				name;
 	int				last_eat;
 	int				nb_of_eat;
@@ -25,6 +27,7 @@ typedef struct		s_data
 	sem_t			*fork;
 	sem_t			*msg;
 	sem_t			*end;
+	int				last_msg;
 	int				nb;
 	int				time_to_die;
 	int				time_to_eat;
@@ -55,6 +58,7 @@ sem_t				*ft_sem(const char *str, int nb);
 
 int					ft_atoi(const char *str);
 void				ft_putnbr_fd(int nb, int fd);
+char				*ft_itoa(int n);
 
 //---------------------------------------------------------------------
 

@@ -11,16 +11,13 @@ int				main(int ac, char **av)
 	g_data = &data;
 	if (!(init_game(ac, av)))
 		return (0);
+	pthread_mutex_lock(&g_data->end);
 	if (!(start_game()))
 		return (0);
-	while (1)
-	{
-		if (end_game())
-		{
-			clean();
-			return (0);
-		}
-	}
+	pthread_mutex_lock(&g_data->end);
+	pthread_mutex_unlock(&g_data->end);
+	end_game();
+	clean();
 	return (0);
 }
 
@@ -29,18 +26,35 @@ int				main(int ac, char **av)
 int				init_game(int ac, char **av)
 {
 	g_data->nb = ft_atoi(av[1]);
+	if (g_data->nb <= 1 || g_data->nb > 1500)
+	{
+		write(1, "nb of philo not aviable\n", 24);
+		return (0);
+	}
 	g_data->time_to_die = ft_atoi(av[2]);
 	g_data->time_to_eat = ft_atoi(av[3]);
 	g_data->time_to_sleep = ft_atoi(av[4]);
+	if (g_data->time_to_die < 0 || g_data->time_to_eat < 0 || g_data->time_to_sleep < 0)
+	{
+		write(1, "bad arguments\n", 14);
+		return (0);
+	}
 	if (ac == 6)
 		g_data->number_of_time_each_philosophers_must_eat = ft_atoi(av[5]);
 	else
 		g_data->number_of_time_each_philosophers_must_eat = 2147483647;
+	if (g_data->number_of_time_each_philosophers_must_eat <= 0)
+	{
+		write(1, "bad arguments\n", 14);
+		return (0);
+	}
 	if (!(g_data->philo = malloc(sizeof(t_philo) * g_data->nb)))
 		return (0);
 	if (!(g_data->fork = malloc(sizeof(pthread_mutex_t) * g_data->nb)))
 		return (0);
+	g_data->last_msg = 0;
 	pthread_mutex_init(&g_data->msg, NULL);
+	pthread_mutex_init(&g_data->end, NULL);
 	g_data->philo_dead = 0;
 	g_data->philo_ok = 0;
 	init_philosophers();
@@ -55,6 +69,7 @@ void			init_philosophers()
 	while (i < g_data->nb)
 	{
 		pthread_mutex_init(&g_data->fork[i], NULL);
+		pthread_mutex_init(&g_data->philo[i].eat, NULL);
 		g_data->philo[i].left = &(g_data->fork[i]);
 		g_data->philo[i].right = &(g_data->fork[(i + 1) % g_data->nb]);
 		g_data->philo[i].last_eat = 0;
@@ -72,11 +87,11 @@ void	clean()
 	while (i < g_data->nb)
 	{
 		pthread_mutex_destroy(&g_data->fork[i]);
-//		pthread_mutex_destroy(&g_data->philo[i].is_eating);
 		i++;
 	}
-	pthread_mutex_destroy(&g_data->msg);
 	free(g_data->fork);
+	pthread_mutex_destroy(&g_data->msg);
+	pthread_mutex_destroy(&g_data->end);
 	free(g_data->philo);
 }
 
@@ -93,8 +108,8 @@ int				start_game()
 	{
 		if (pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]))
 			return (0);
+		pthread_detach(tid);
 		g_data->philo[i].last_eat = g_data->time_start;
-//---> init dans philo2 et 3
 		i++;
 	}
 	return (1);
@@ -107,6 +122,12 @@ int				end_game()
 	if (g_data->philo_dead)
 	{
 		pthread_mutex_lock(&g_data->msg);
+		if (g_data->last_msg)
+		{
+			pthread_mutex_unlock(&g_data->msg);
+			return (1);
+		}
+		g_data->last_msg = 1;
 		time = get_time() - g_data->time_start;
 		ft_putnbr_fd(time, 1);
 		write(1, "\t", 1);
@@ -114,9 +135,10 @@ int				end_game()
 		write(1, " died\n", 6);
 		return (1);
 	}
-	if (g_data->philo_ok >= g_data->nb)
+	else if (g_data->philo_ok >= g_data->nb)
 	{
 		pthread_mutex_lock(&g_data->msg);
+		g_data->last_msg = 1;
 		write(1, "Everybody has eaten enough times.\n", 34);
 		return (1);
 	}
@@ -136,6 +158,11 @@ void			message(t_philo *philo, int msg)
 	int		time;
 
 	pthread_mutex_lock(&g_data->msg);
+	if (g_data->last_msg)
+	{
+		pthread_mutex_unlock(&g_data->msg);
+		return ;
+	}
 	time = get_time() - g_data->time_start;
 	ft_putnbr_fd(time, 1);
 	write(1, "\t", 1);
@@ -162,24 +189,29 @@ void			*ft_philo(void *tmp_philo)
 	philo = (t_philo *)tmp_philo;
 	if (pthread_create(&tid, NULL, &check_life, philo))
 		return (void*)1;
+	pthread_detach(tid);
 	while (1)
 	{
 		//------ THINK -----------------
 		message(philo, 1);
 		//------- EAT ------------------
 		pthread_mutex_lock(philo->left);
+		message(philo, 4);
 		pthread_mutex_lock(philo->right);
 		message(philo, 4);
-		message(philo, 4);
+		pthread_mutex_lock(&philo->eat);
 		philo->last_eat = get_time();
-		(philo->nb_of_eat)++;
 		message(philo, 2);
 		usleep(g_data->time_to_eat * 1000);
+		pthread_mutex_unlock(&philo->eat);
 		pthread_mutex_unlock(philo->left);
 		pthread_mutex_unlock(philo->right);
+		(philo->nb_of_eat)++;
 		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
 		{	
 			g_data->philo_ok++;
+			if (g_data->philo_ok >= g_data->nb)
+				pthread_mutex_unlock(&g_data->end);
 			break;
 		}
 		//------ SLEEP -----------------
@@ -196,11 +228,18 @@ void			*check_life(void *tmp_philo)
 	philo = (t_philo *)tmp_philo;
 	while (1)
 	{
+		pthread_mutex_lock(&philo->eat);
 		if (get_time() - philo->last_eat >= g_data->time_to_die)
+		{
 			g_data->philo_dead = philo->name;
+//			end_game();
+			pthread_mutex_unlock(&philo->eat);
+			pthread_mutex_unlock(&g_data->end);
+		}
+		pthread_mutex_unlock(&philo->eat);
+		usleep(1000);
 	}
 	return (NULL);
 }
 
 //-------------------------------------------------------------------------------
-

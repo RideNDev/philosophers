@@ -14,7 +14,7 @@ OBJLIB_PATH = ./obj
 
 INC_NAME =	philosophers.h
 SRC_NAME =	main.c
-LIB_NAME =	ft_atoi.c ft_putnbr_fd.c
+LIB_NAME =	ft_atoi.c ft_putnbr_fd.c ft_itoa.c
 
 OBJ_NAME = $(SRC_NAME:.c=.o)
 OBJLIB_NAME = $(LIB_NAME:.c=.o)
@@ -28,7 +28,7 @@ OBJLIB = $(addprefix $(OBJLIB_PATH)/,$(OBJLIB_NAME))
 all: $(NAME)
 
 $(NAME): $(OBJ) $(OBJLIB)
-	gcc -Wall -Wextra -Werror -o ${NAME} -lpthread -D_REENTRANT ${OBJLIB} ${OBJ}
+	gcc -Wall -Wextra -Werror -o ${NAME} -pthread  ${OBJLIB} ${OBJ}
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c
 	@mkdir $(OBJ_PATH) 2> /dev/null || true

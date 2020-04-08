@@ -10,6 +10,7 @@ typedef struct		s_philo
 {
 	pthread_mutex_t	*right;
 	pthread_mutex_t	*left;
+	pthread_mutex_t	eat;;
 	int				name;
 	int				last_eat;
 	int				nb_of_eat;
@@ -20,6 +21,8 @@ typedef struct		s_data
 	t_philo			*philo;
 	pthread_mutex_t	*fork;
 	pthread_mutex_t	msg;
+	pthread_mutex_t	end;
+	int				last_msg;
 	int				nb;
 	int				time_to_die;
 	int				time_to_eat;
