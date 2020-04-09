@@ -208,7 +208,6 @@ void			*ft_philo(void *tmp_philo)
 		(philo->nb_of_eat)++;
 		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
 		{	
-//			sem_post(philo->enouth_eat);
 			g_data->philo_ok++;
 			if (g_data->philo_ok >= g_data->nb)
 			{

@@ -15,7 +15,6 @@ int				main(int ac, char **av)
 		return (0);
 	sem_wait(g_data->end);
 	sem_post(g_data->end);
-	end_game();
 	clean();	
 	return (0);
 }
@@ -52,8 +51,9 @@ int				init_game(int ac, char **av)
 	g_data->fork = ft_sem(FORK, g_data->nb);
 	g_data->msg = ft_sem(MSG, 1);
 	g_data->end = ft_sem(END, 0);
+	g_data->philo_ok = ft_sem(OK, 0);
 	g_data->philo_dead = 0;
-	g_data->philo_ok = 0;
+	g_data->philo_op = 0;
 	g_data->last_msg = 0;
 	init_philosophers();
 	return (1);
@@ -107,6 +107,9 @@ int				start_game()
 
 	i = 0;
 	g_data->time_start = get_time();
+
+	if (pthread_create(&tid, NULL, &ft_nbeat, NULL))
+		return (0);
 	while (i < g_data->nb)
 	{
 //		if (pthread_create(&tid, NULL, &ft_philo, &g_data->philo[i]))
@@ -143,7 +146,7 @@ int				end_game()
 //		sem_post(g_data->msg);
 		return (1);
 	}
-	else if (g_data->philo_ok >= g_data->nb)
+	else if (g_data->philo_op >= g_data->nb)
 	{
 		sem_wait(g_data->msg);
 		g_data->last_msg = 1;
@@ -203,7 +206,7 @@ void			*ft_philo(void *tmp_philo)
 
 	philo = (t_philo *)tmp_philo;
 	if (pthread_create(&tid, NULL, &check_life, philo))
-		return (NULL);
+		return(NULL);
 //	pthread_detach(tid);
 	while (1)
 	{
@@ -223,16 +226,7 @@ void			*ft_philo(void *tmp_philo)
 		sem_post(g_data->fork);
 		(philo->nb_of_eat)++;
 		if (philo->nb_of_eat >= g_data->number_of_time_each_philosophers_must_eat)
-		{	
-//			sem_post(philo->enouth_eat);
-			g_data->philo_ok++;
-			if (g_data->philo_ok >= g_data->nb)
-			{
-//				end_game();
-				sem_post(g_data->end);
-			}
-			break;
-		}
+			sem_post(g_data->philo_ok);
 		//------ SLEEP -----------------
 		message(philo, 3);
 		usleep(g_data->time_to_sleep * 1000);	
@@ -254,11 +248,28 @@ void			*check_life(void *tmp_philo)
 			end_game();
 			sem_post(philo->eat);
 			sem_post(g_data->end);
-			break;
+			break ;
 		}
 		sem_post(philo->eat);
 		usleep(1000);
 	}
+	return (NULL);
+}
+
+void			*ft_nbeat(void	*a)
+{
+	int		i;
+
+	(void)a;
+	i = 0;
+	while (i < g_data->nb)
+	{
+		sem_wait(g_data->philo_ok);
+		i++;
+	}
+	g_data->philo_op = g_data->nb + 1;
+	end_game();
+	sem_post(g_data->end);
 	return (NULL);
 }
 

@@ -16,7 +16,7 @@ int				main(int ac, char **av)
 		return (0);
 	pthread_mutex_lock(&g_data->end);
 	pthread_mutex_unlock(&g_data->end);
-	end_game();
+//	end_game();
 	clean();
 	return (0);
 }
@@ -111,6 +111,7 @@ int				start_game()
 		pthread_detach(tid);
 		g_data->philo[i].last_eat = g_data->time_start;
 		i++;
+		usleep(100);
 	}
 	return (1);
 }
@@ -150,7 +151,7 @@ int				get_time(void)
 	struct timeval	tmp;
 
 	gettimeofday(&tmp, NULL);
-	return ((tmp.tv_sec * (uint64_t)1000) + (tmp.tv_usec / 1000));
+	return (((int)tmp.tv_sec * 1000) + ((int)tmp.tv_usec / 1000));
 }
 
 void			message(t_philo *philo, int msg)
@@ -211,7 +212,10 @@ void			*ft_philo(void *tmp_philo)
 		{	
 			g_data->philo_ok++;
 			if (g_data->philo_ok >= g_data->nb)
+			{	
+				end_game();
 				pthread_mutex_unlock(&g_data->end);
+			}
 			break;
 		}
 		//------ SLEEP -----------------
@@ -232,7 +236,7 @@ void			*check_life(void *tmp_philo)
 		if (get_time() - philo->last_eat >= g_data->time_to_die)
 		{
 			g_data->philo_dead = philo->name;
-//			end_game();
+			end_game();
 			pthread_mutex_unlock(&philo->eat);
 			pthread_mutex_unlock(&g_data->end);
 		}
