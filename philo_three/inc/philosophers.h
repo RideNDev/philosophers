@@ -5,10 +5,11 @@
 # include <stdlib.h>
 # include <unistd.h>
 # include <sys/time.h>
+# include <sys/wait.h>
 # include <fcntl.h>  
 # include <semaphore.h>
 # include <stdint.h>
-#include <signal.h>
+# include <signal.h>
 
 # define MSG "msg_w"
 # define FORK "fork_w"

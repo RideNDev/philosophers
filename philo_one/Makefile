@@ -28,7 +28,7 @@ OBJLIB = $(addprefix $(OBJLIB_PATH)/,$(OBJLIB_NAME))
 all: $(NAME)
 
 $(NAME): $(OBJ) $(OBJLIB)
-	gcc -Wall -Wextra -Werror -o ${NAME} -lpthread -D_REENTRANT ${OBJLIB} ${OBJ}
+	gcc -Wall -Wextra -Werror -o ${NAME} -pthread -D_REENTRANT ${OBJLIB} ${OBJ}
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c
 	@mkdir $(OBJ_PATH) 2> /dev/null || true
