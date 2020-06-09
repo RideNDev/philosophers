@@ -2,6 +2,7 @@
 # define PHILOSOPHERS_H
 
 # include <pthread.h>
+# include <fcntl.h>
 # include <stdlib.h>
 # include <unistd.h>
 # include <sys/time.h>
@@ -10,7 +11,7 @@ typedef struct		s_philo
 {
 	pthread_mutex_t	*right;
 	pthread_mutex_t	*left;
-	pthread_mutex_t	eat;;
+	pthread_mutex_t	eat;
 	int				name;
 	int				last_eat;
 	int				nb_of_eat;
@@ -33,26 +34,20 @@ typedef struct		s_data
 	int				philo_dead;
 }					t_data;
 
-extern		t_data *g_data;
-
-
-//---------------------------------------------------------------------
+extern	t_data		*g_data;
 
 int					init_game(int ac, char **av);
-void        		init_philosophers(void);
+int					init_game2();
+void				init_philosophers(void);
 void				clean();
-
 int					start_game(void);
-int         		end_game();
-
+int					end_game();
 void				*ft_philo(void *tmp_philo);
+void				philo_eat(t_philo *philo);
 void				*check_life(void *tmp_philo);
 void				message(t_philo *philo, int msg);
 int					get_time(void);
-
 int					ft_atoi(const char *str);
 void				ft_putnbr_fd(int nb, int fd);
-
-//---------------------------------------------------------------------
 
 #endif

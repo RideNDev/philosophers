@@ -13,7 +13,7 @@ OBJ_PATH = ./obj
 OBJLIB_PATH = ./obj
 
 INC_NAME =	philosophers.h
-SRC_NAME =	main.c
+SRC_NAME =	main.c philo_life.c utils.c
 LIB_NAME =	ft_atoi.c ft_putnbr_fd.c
 
 OBJ_NAME = $(SRC_NAME:.c=.o)
@@ -29,6 +29,10 @@ all: $(NAME)
 
 $(NAME): $(OBJ) $(OBJLIB)
 	gcc -Wall -Wextra -Werror -o ${NAME} -pthread -D_REENTRANT ${OBJLIB} ${OBJ}
+
+valgrind: $(OBJ) $(OBJLIB)
+	gcc -Wall -Wextra -Werror -o ${NAME} -g -pthread -D_REENTRANT ${OBJLIB} ${OBJ}
+	valgrind --leak-check=full --show-leak-kinds=all ./philo_one 4 100 3 2 100
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c
 	@mkdir $(OBJ_PATH) 2> /dev/null || true

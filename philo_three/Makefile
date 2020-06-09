@@ -13,7 +13,7 @@ OBJ_PATH = ./obj
 OBJLIB_PATH = ./obj
 
 INC_NAME =	philosophers.h
-SRC_NAME =	main.c
+SRC_NAME =	main.c philo.c utils.c
 LIB_NAME =	ft_atoi.c ft_putnbr_fd.c ft_itoa.c
 
 OBJ_NAME = $(SRC_NAME:.c=.o)
